@@ -1,5 +1,7 @@
 package math
 
+// By Sebastian Raaphorst, 2023.
+
 import kotlin.math.*
 
 sealed interface ComplexBase {
@@ -10,10 +12,10 @@ sealed interface ComplexBase {
     val toCartesian: Cartesian
 }
 
-class Polar(val r: Double, thetaUnbounded: Double): ComplexBase {
-    constructor(r: Number, thetaAny: Number): this(r.toDouble(), thetaAny.toDouble())
+class Polar(val r: Double, theta: Double): ComplexBase {
+    constructor(r: Number, theta: Number): this(r.toDouble(), theta.toDouble())
 
-    val theta = fixAngle(thetaUnbounded)
+    val theta = fixAngle(theta)
 
     override val real: Boolean
         get() = Compare.almostEquals(0.0, r * cos(theta))
@@ -36,13 +38,37 @@ class Polar(val r: Double, thetaUnbounded: Double): ComplexBase {
         Polar(r.pow(n.toDouble()), n.toDouble() * theta)
 
     operator fun unaryMinus(): Polar =
-        Polar(-r, theta)
+        Polar(-r, theta - PI)
 
-    operator fun times(other: Polar): Polar =
-        Polar(r * other.r, theta + other.theta)
+    operator fun plus(polar: Polar): Polar =
+        (this.toCartesian + polar.toCartesian).toPolar
 
-    operator fun div(other: Polar): Polar =
-        Polar(r / other.r, theta - other.theta)
+    operator fun plus(n: Number): Polar =
+        (this.toCartesian + n).toPolar
+
+    operator fun minus(polar: Polar): Polar =
+        (this.toCartesian - polar.toCartesian).toPolar
+
+    operator fun minus(n: Number): Polar =
+        (this.toCartesian - n).toPolar
+
+    operator fun times(polar: Polar): Polar =
+        Polar(r * polar.r, theta + polar.theta)
+
+    operator fun times(n: Number): Polar {
+        val nd = n.toDouble()
+        return if (nd >= 0) Polar(nd * r, theta)
+        else Polar(nd * r.absoluteValue, theta - PI)
+    }
+
+    operator fun div(polar: Polar): Polar =
+        Polar(r / polar.r, theta - polar.theta)
+
+    operator fun div(n: Number): Polar {
+        val nd = n.toDouble()
+        return if (nd >= 0) Polar(r / nd, theta)
+        else Polar(r / nd.absoluteValue, theta - PI)
+    }
 
     override fun toString(): String =
         "Polar(r=$r, theta=$theta)"
@@ -51,8 +77,8 @@ class Polar(val r: Double, thetaUnbounded: Double): ComplexBase {
         // Zero does not have a unique representation in polar coordinates.
         // Anything with r = 0 is zero.
         val ZERO = Polar(0, 0)
-        val ONE = Polar(1, PI)
-        val I = Polar(1, PI / 2)
+        val ONE = Polar(1, 0)
+        val J = Polar(1, PI / 2)
 
         tailrec fun fixAngle(angle: Double): Double {
             return if (angle >= 0 && angle < 2 * PI) angle
@@ -61,6 +87,25 @@ class Polar(val r: Double, thetaUnbounded: Double): ComplexBase {
         }
     }
 }
+
+val Number.J: Polar
+    get() = Polar(toDouble(), PI / 2)
+
+operator fun Number.plus(polar: Polar): Polar =
+    polar + this
+
+operator fun Number.minus(polar: Polar): Polar =
+    (toDouble() - polar.toCartesian).toPolar
+
+operator fun Number.times(polar: Polar): Polar =
+    polar * this
+
+operator fun Number.div(polar: Polar): Polar {
+    val nd = toDouble()
+    return if (nd >= 0) Polar(nd / polar.r, -polar.theta)
+    else Polar(nd.absoluteValue / polar.r, -polar.theta + PI)
+}
+
 
 data class Cartesian(val re: Double, val im: Double): ComplexBase {
     constructor(re: Number, im: Number): this(re.toDouble(), im.toDouble())
@@ -87,32 +132,32 @@ data class Cartesian(val re: Double, val im: Double): ComplexBase {
     operator fun unaryMinus(): Cartesian =
         Cartesian(-re, -im)
 
-    operator fun plus(other: Cartesian): Cartesian =
-        Cartesian(re + other.re, im + other.im)
+    operator fun plus(cartesian: Cartesian): Cartesian =
+        Cartesian(re + cartesian.re, im + cartesian.im)
 
-    operator fun plus(other: Number): Cartesian =
-        Cartesian(re + other.toDouble(), im)
+    operator fun plus(n: Number): Cartesian =
+        Cartesian(re + n.toDouble(), im)
 
-    operator fun minus(other: Cartesian): Cartesian =
-        Cartesian(re - other.re, im - other.im)
+    operator fun minus(cartesian: Cartesian): Cartesian =
+        Cartesian(re - cartesian.re, im - cartesian.im)
 
-    operator fun minus(other: Number): Cartesian =
-        Cartesian(re - other.toDouble(), im)
+    operator fun minus(n: Number): Cartesian =
+        Cartesian(re - n.toDouble(), im)
 
-    operator fun times(other: Cartesian): Cartesian =
-        Cartesian(re * other.re - im * other.im, re * other.im + im * other.re)
+    operator fun times(cartesian: Cartesian): Cartesian =
+        Cartesian(re * cartesian.re - im * cartesian.im, re * cartesian.im + im * cartesian.re)
 
-    operator fun times(other: Number): Cartesian =
-        Cartesian(re * other.toDouble(), im * other.toDouble())
+    operator fun times(n: Number): Cartesian =
+        Cartesian(re * n.toDouble(), im * n.toDouble())
 
-    operator fun div(other: Cartesian): Cartesian =
+    operator fun div(cartesian: Cartesian): Cartesian =
         Cartesian(
-            (re * other.re + im * other.im) / (other.re * other.re + other.im * other.im),
-            (im * other.re - re * other.im) / (other.re * other.re + other.im * other.im)
+            (re * cartesian.re + im * cartesian.im) / (cartesian.re * cartesian.re + cartesian.im * cartesian.im),
+            (im * cartesian.re - re * cartesian.im) / (cartesian.re * cartesian.re + cartesian.im * cartesian.im)
         )
 
-    operator fun div(other: Number): Cartesian =
-        Cartesian(re / other.toDouble(), im / other.toDouble())
+    operator fun div(n: Number): Cartesian =
+        Cartesian(re / n.toDouble(), im / n.toDouble())
 
     // To do power, easier to change into polar coordinates and then change back.
     fun ppow(n: Number): Cartesian =
@@ -135,13 +180,13 @@ val Number.I: Cartesian
     get() = Cartesian(0.0, toDouble())
 
 operator fun Number.plus(cartesian: Cartesian): Cartesian =
-    Cartesian(toDouble() + cartesian.re, cartesian.im)
+    cartesian + this
 
 operator fun Number.minus(cartesian: Cartesian): Cartesian =
     Cartesian(toDouble() - cartesian.re, -cartesian.im)
 
 operator fun Number.times(cartesian: Cartesian): Cartesian =
-    Cartesian(toDouble() * cartesian.re, toDouble() * cartesian.im)
+    cartesian * this
 
 operator fun Number.div(cartesian: Cartesian): Cartesian =
     Cartesian(
@@ -150,7 +195,7 @@ operator fun Number.div(cartesian: Cartesian): Cartesian =
     )
 
 object Compare {
-    internal const val DEFAULT_PRECISION = 1e-5
+    const val DEFAULT_PRECISION = 1e-5
 
     fun <S : Number, T : Number> almostEquals(
         x: S,
@@ -159,6 +204,11 @@ object Compare {
     ): Boolean =
         (x.toDouble() - y.toDouble()).absoluteValue < precision
 
-    fun <S : ComplexBase, T : ComplexBase> almostEquals(x: S, y: T, precision: Double = DEFAULT_PRECISION): Boolean =
-        almostEquals(x.toCartesian.re, y.toCartesian.re) && almostEquals(x.toCartesian.im, y.toCartesian.im)
+    fun <S : ComplexBase, T : ComplexBase> almostEquals(
+        x: S,
+        y: T,
+        precision: Double = DEFAULT_PRECISION
+    ): Boolean =
+        almostEquals(x.toCartesian.re, y.toCartesian.re, precision) &&
+                almostEquals(x.toCartesian.im, y.toCartesian.im, precision)
 }

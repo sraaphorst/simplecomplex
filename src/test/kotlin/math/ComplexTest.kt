@@ -1,5 +1,7 @@
 package math
 
+// By Sebastian Raaphorst, 2023.
+
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.property.forAll
 import io.kotest.property.Arb
@@ -8,7 +10,6 @@ import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.numericDouble
 import io.kotest.property.arbitrary.pair
 import kotlin.math.PI
-import math.*
 
 val cartesianArb = arbitrary {
     val re = Arb.numericDouble(-1e3, 1e3).bind().toDouble()
@@ -29,17 +30,31 @@ class ComplexTest: StringSpec({
         }
     }
 
-    "Inversion of complex number times itself is 1" {
+    "Inversion of cartesian times itself is 1" {
         forAll(cartesianArb) { c ->
             // We do not want numbers extremely close to 0.
             Compare.almostEquals(Cartesian.ZERO, c) || Compare.almostEquals(Cartesian.ONE, c * (1 / c))
         }
     }
 
-    "Multiplying by complex conjugate gives real" {
+    "Inversion of polar times itself is 1" {
+        forAll(polarArb) { p ->
+            // We do not want numbers extremely close to 0.
+            Compare.almostEquals(Polar.ZERO, p) || Compare.almostEquals(Polar.ONE, p * (1 / p))
+        }
+    }
+
+    "Multiplying by cartesian conjugate gives real" {
         forAll(cartesianArb) { c ->
             val value = (c.conjugate * c)
             Compare.almostEquals(0.0, value.im)
+        }
+    }
+
+    "Multiplying by polar conjugate gives real" {
+        forAll(polarArb) { p ->
+            val value = (p.conjugate * p)
+            Compare.almostEquals(0.0, value.theta)
         }
     }
 
