@@ -8,11 +8,12 @@ import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.numericDouble
 import io.kotest.property.arbitrary.pair
 import kotlin.math.PI
+import math.*
 
-val complexArb = arbitrary {
+val cartesianArb = arbitrary {
     val re = Arb.numericDouble(-1e3, 1e3).bind().toDouble()
     val im = Arb.numericDouble(-1e3, 1e3).bind().toDouble()
-    Complex(re, im)
+    Cartesian(re, im)
 }
 
 val polarArb = arbitrary {
@@ -24,41 +25,49 @@ val polarArb = arbitrary {
 class ComplexTest: StringSpec({
     "Using I suffix on a number creates an imaginary number" {
         forAll(Arb.int(-1000, 1000)) { n ->
-            n.I == Complex(0, n)
+            n.I == Cartesian(0, n)
         }
     }
 
     "Inversion of complex number times itself is 1" {
-        forAll(complexArb) { c ->
+        forAll(cartesianArb) { c ->
             // We do not want numbers extremely close to 0.
-            almostEquals(Complex.ZERO, c) || almostEquals(Complex.ONE, c * (1 / c))
+            Compare.almostEquals(Cartesian.ZERO, c) || Compare.almostEquals(Cartesian.ONE, c * (1 / c))
         }
     }
 
     "Multiplying by complex conjugate gives real" {
-        forAll(complexArb) { c ->
+        forAll(cartesianArb) { c ->
             val value = (c.conjugate * c)
-            almostEquals(0.0, value.im)
+            Compare.almostEquals(0.0, value.im)
         }
     }
 
     "Conjugate is self inverting" {
-        forAll(complexArb) { c ->
-            almostEquals(c, c.conjugate.conjugate)
+        forAll(cartesianArb) { c ->
+            Compare.almostEquals(c, c.conjugate.conjugate)
         }
     }
 
     "Multiplying by complex conjugate gives square of magnitude" {
-        forAll(complexArb) { c ->
+        forAll(cartesianArb) { c ->
             val value = (c.conjugate * c)
-            almostEquals(c.magnitude * c.magnitude, value.re)
-            almostEquals(0, value.im)
+            Compare.almostEquals(c.magnitude * c.magnitude, value.re)
+            Compare.almostEquals(0, value.im)
         }
     }
 
     "Multiplying two numbers in polar coordinates gives same result as multiplying in cartesian coordinates" {
         forAll(Arb.pair(polarArb, polarArb)) { (p1, p2) ->
-            almostEquals((p1 * p2).toComplex, (p1.toComplex * p2.toComplex))
+            Compare.almostEquals((p1 * p2).toCartesian, (p1.toCartesian * p2.toCartesian))
+        }
+    }
+
+    "Multiplying two numbers in cartesian coordinates gives same result as multiplying in polar coordinates" {
+        forAll(Arb.pair(cartesianArb, cartesianArb)) { (c1, c2) ->
+            Compare.almostEquals((c1 * c2).toPolar, (c1.toPolar * c2.toPolar))
         }
     }
 })
+
+

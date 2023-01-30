@@ -3,104 +3,161 @@ package math
 import kotlin.math.*
 
 sealed interface ComplexBase {
+    val real: Boolean
+    val imag: Boolean
     val toPolar: Polar
-    val toComplex: Complex
+    val toCartesian: Cartesian
 }
 
-data class Polar(val r: Double, val theta: Double): ComplexBase {
+class Polar(val r: Double, thetaUnbounded: Double): ComplexBase {
+    constructor(r: Number, thetaAny: Number): this(r.toDouble(), thetaAny.toDouble())
+
+    val theta = run {
+//        println("Calculating $thetaUnbounded...")
+        // We want theta to be in [0, 2π).
+        tailrec fun fix(angle: Double): Double {
+//            println("\ttheta was $thetaUnbounded, now $angle")
+//            println("\tIn range: ${(angle >= 0 && angle < 2 * PI)}")
+//            println("\tToo low:  ${angle < 0}")
+//            println("\tToo high: ${angle >= 2 * PI}")
+            return if (angle >= 0 && angle < 2 * PI) angle
+            else if (angle < 0) fix(angle + 2 * PI)
+            else fix(angle - 2 * PI)
+        }
+        fix(thetaUnbounded)
+    }
+
+    override val real: Boolean
+        get() = Compare.almostEquals(0.0, r * cos(theta))
+
+    override val imag: Boolean
+        get() = Compare.almostEquals(0.0, r * sin(theta))
+
     override val toPolar: Polar = this
 
-    override val toComplex: Complex
-        get() = Complex(r * cos(theta), r * sin(theta))
+    override val toCartesian: Cartesian
+        get() = Cartesian(r * cos(theta), r * sin(theta))
 
     fun pow(n: Number): Polar =
-        Polar(r.pow(n.toDouble()), theta.pow(n.toDouble()))
+        Polar(r.pow(n.toDouble()), n.toDouble() * theta)
+
+    operator fun unaryMinus(): Polar =
+        Polar(-r, theta)
 
     operator fun times(other: Polar): Polar =
         Polar(r * other.r, theta + other.theta)
+
+    operator fun div(other: Polar): Polar =
+        Polar(r / other.r, theta - other.theta)
+
+    override fun toString(): String =
+        "Polar(r=$r, theta=$theta)"
+
+    companion object {
+        // Zero does not have a unique representation in polar coordinates.
+        // Anything with r = 0 is zero.
+        val ZERO = Polar(0, 0)
+        val ONE = Polar(1, PI)
+        val I = Polar(1, PI / 2)
+    }
 }
 
-data class Complex(val re: Double, val im: Double): ComplexBase {
+data class Cartesian(val re: Double, val im: Double): ComplexBase {
     constructor(re: Number, im: Number): this(re.toDouble(), im.toDouble())
 
-    val real: Boolean
-        get() = almostEquals(0.0, im)
-    val imag: Boolean
-        get() = almostEquals(0.0, re)
+    override val real: Boolean
+        get() = Compare.almostEquals(0.0, im)
+    override val imag: Boolean
+        get() = Compare.almostEquals(0.0, re)
 
     override val toPolar: Polar
-        get() = Polar(magnitude, acos(re / magnitude))
+        get() {
+            return Polar(magnitude, atan2(im, re))
+        }
 
-    override val toComplex: Complex = this
+    override val toCartesian: Cartesian = this
 
-    operator fun unaryMinus(): Complex =
-        Complex(-re, -im)
+    operator fun unaryMinus(): Cartesian =
+        Cartesian(-re, -im)
 
-    operator fun plus(other: Complex): Complex =
-        Complex(re + other.re, im + other.im)
+    operator fun plus(other: Cartesian): Cartesian =
+        Cartesian(re + other.re, im + other.im)
 
-    operator fun plus(other: Number): Complex =
-        Complex(re + other.toDouble(), im)
+    operator fun plus(other: Number): Cartesian =
+        Cartesian(re + other.toDouble(), im)
 
-    operator fun minus(other: Complex): Complex =
-        Complex(re - other.re, im - other.im)
+    operator fun minus(other: Cartesian): Cartesian =
+        Cartesian(re - other.re, im - other.im)
 
-    operator fun minus(other: Number): Complex =
-        Complex(re - other.toDouble(), im)
+    operator fun minus(other: Number): Cartesian =
+        Cartesian(re - other.toDouble(), im)
 
-    operator fun times(other: Complex): Complex =
-        Complex(re * other.re - im * other.im, re * other.im + im * other.re)
+    operator fun times(other: Cartesian): Cartesian =
+        Cartesian(re * other.re - im * other.im, re * other.im + im * other.re)
 
-    operator fun times(other: Number): Complex =
-        Complex(re * other.toDouble(), im * other.toDouble())
+    operator fun times(other: Number): Cartesian =
+        Cartesian(re * other.toDouble(), im * other.toDouble())
 
-    operator fun div(other: Complex): Complex =
-        Complex(
+    operator fun div(other: Cartesian): Cartesian =
+        Cartesian(
             (re * other.re + im * other.im) / (other.re * other.re + other.im * other.im),
             (im * other.re - re * other.im) / (other.re * other.re + other.im * other.im)
         )
 
-    operator fun div(other: Number): Complex =
-        Complex(re / other.toDouble(), im / other.toDouble())
+    operator fun div(other: Number): Cartesian =
+        Cartesian(re / other.toDouble(), im / other.toDouble())
 
     // To do power, easier to change into polar coordinates and then change back.
-    fun ppow(n: Number): Complex =
-        toPolar.pow(n).toComplex
+    fun ppow(n: Number): Cartesian =
+        toPolar.pow(n).toCartesian
 
     // If the user insists, can do via Complex, but only to non-negative Int values.
-    fun ipow(n: Int): Complex =
+    fun ipow(n: Int): Cartesian =
         if (n < 0) throw ArithmeticException("Cannot evaluate $this.ipow($n): use ppow($n) instead.")
-        else if (n == 0) Complex(1, 0)
+        else if (n == 0) Cartesian(1, 0)
         else (this * this) * ipow(n - 1)
 
-    val conjugate: Complex
-        get() = Complex(re, -im)
+    val conjugate: Cartesian
+        get() = Cartesian(re, -im)
 
     val magnitude: Double
         get() = sqrt(re * re + im * im)
 
     companion object {
-        val ZERO = Complex(0, 0)
-        val ONE = Complex(1, 0)
-        val I = Complex(0, 1)
+        val ZERO = Cartesian(0, 0)
+        val ONE = Cartesian(1, 0)
+        val I = Cartesian(0, 1)
     }
 }
 
-val Number.I: Complex
-    get() = Complex(0.0, toDouble())
+val Number.I: Cartesian
+    get() = Cartesian(0.0, toDouble())
 
-operator fun Number.plus(complex: Complex): Complex =
-    Complex(toDouble() + complex.re, complex.im)
+operator fun Number.plus(cartesian: Cartesian): Cartesian =
+    Cartesian(toDouble() + cartesian.re, cartesian.im)
 
-operator fun Number.minus(complex: Complex): Complex =
-    Complex(toDouble() - complex.re, -complex.im)
+operator fun Number.minus(cartesian: Cartesian): Cartesian =
+    Cartesian(toDouble() - cartesian.re, -cartesian.im)
 
-operator fun Number.times(complex: Complex): Complex =
-    Complex(toDouble() * complex.re, toDouble() * complex.im)
+operator fun Number.times(cartesian: Cartesian): Cartesian =
+    Cartesian(toDouble() * cartesian.re, toDouble() * cartesian.im)
 
-operator fun Number.div(complex: Complex): Complex =
-    Complex(
-        toDouble() * complex.re / (complex.re * complex.re + complex.im * complex.im),
-        (- toDouble() * complex.im) / (complex.re * complex.re + complex.im * complex.im)
+operator fun Number.div(cartesian: Cartesian): Cartesian =
+    Cartesian(
+        toDouble() * cartesian.re / (cartesian.re * cartesian.re + cartesian.im * cartesian.im),
+        (- toDouble() * cartesian.im) / (cartesian.re * cartesian.re + cartesian.im * cartesian.im)
     )
 
+object Compare {
+    internal const val DEFAULT_PRECISION = 1e-5
+
+    fun <S : Number, T : Number> almostEquals(
+        x: S,
+        y: T,
+        precision: Double = DEFAULT_PRECISION
+    ): Boolean =
+        (x.toDouble() - y.toDouble()).absoluteValue < precision
+
+    fun <S : ComplexBase, T : ComplexBase> almostEquals(x: S, y: T, precision: Double = DEFAULT_PRECISION): Boolean =
+        almostEquals(x.toCartesian.re, y.toCartesian.re) && almostEquals(x.toCartesian.im, y.toCartesian.im)
+}
