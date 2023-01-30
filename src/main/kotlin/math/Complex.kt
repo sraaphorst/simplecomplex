@@ -213,8 +213,7 @@ object Compare {
         // we use the fixed precision.
         // This handles cases where a number is 0 or extremely close to 0.
         // Otherwise, allow a fractional tolerance based on the values.
-        return if (diff < precision) true
-        else diff < max(xd.absoluteValue, yd.absoluteValue) * precision
+        return (diff < precision) || diff < max(xd.absoluteValue, yd.absoluteValue) * precision
     }
 
     fun <S : ComplexBase, T : ComplexBase> almostEquals(
