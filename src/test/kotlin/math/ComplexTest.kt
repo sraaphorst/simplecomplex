@@ -68,6 +68,18 @@ class ComplexTest: StringSpec({
             Compare.almostEquals((c1 * c2).toPolar, (c1.toPolar * c2.toPolar))
         }
     }
+
+    "Dividing two numbers in polar coordinates gives same result as dividing in cartesian coordinates" {
+        forAll(Arb.pair(polarArb, polarArb)) { (p1, p2) ->
+            Compare.almostEquals(0.0, p2.magnitude) ||
+            Compare.almostEquals((p1 / p2).toCartesian, (p1.toCartesian / p2.toCartesian))
+        }
+    }
+
+    "Dividing two numbers in cartesian coordinates gives same result as dividing in polar coordinates" {
+        forAll(Arb.pair(cartesianArb, cartesianArb)) { (c1, c2) ->
+            Compare.almostEquals(0.0, c2.magnitude) ||
+            Compare.almostEquals((c1 / c2).toPolar, (c1.toPolar / c2.toPolar))
+        }
+    }
 })
-
-

@@ -5,6 +5,7 @@ import kotlin.math.*
 sealed interface ComplexBase {
     val real: Boolean
     val imag: Boolean
+    val magnitude: Double
     val toPolar: Polar
     val toCartesian: Cartesian
 }
@@ -12,26 +13,19 @@ sealed interface ComplexBase {
 class Polar(val r: Double, thetaUnbounded: Double): ComplexBase {
     constructor(r: Number, thetaAny: Number): this(r.toDouble(), thetaAny.toDouble())
 
-    val theta = run {
-//        println("Calculating $thetaUnbounded...")
-        // We want theta to be in [0, 2π).
-        tailrec fun fix(angle: Double): Double {
-//            println("\ttheta was $thetaUnbounded, now $angle")
-//            println("\tIn range: ${(angle >= 0 && angle < 2 * PI)}")
-//            println("\tToo low:  ${angle < 0}")
-//            println("\tToo high: ${angle >= 2 * PI}")
-            return if (angle >= 0 && angle < 2 * PI) angle
-            else if (angle < 0) fix(angle + 2 * PI)
-            else fix(angle - 2 * PI)
-        }
-        fix(thetaUnbounded)
-    }
+    val theta = fixAngle(thetaUnbounded)
 
     override val real: Boolean
         get() = Compare.almostEquals(0.0, r * cos(theta))
 
     override val imag: Boolean
         get() = Compare.almostEquals(0.0, r * sin(theta))
+
+    val conjugate: Polar
+        get() = Polar(r, -theta)
+
+    override val magnitude: Double
+        get() = r
 
     override val toPolar: Polar = this
 
@@ -59,6 +53,12 @@ class Polar(val r: Double, thetaUnbounded: Double): ComplexBase {
         val ZERO = Polar(0, 0)
         val ONE = Polar(1, PI)
         val I = Polar(1, PI / 2)
+
+        tailrec fun fixAngle(angle: Double): Double {
+            return if (angle >= 0 && angle < 2 * PI) angle
+            else if (angle < 0) fixAngle(angle + 2 * PI)
+            else fixAngle(angle - 2 * PI)
+        }
     }
 }
 
@@ -67,8 +67,15 @@ data class Cartesian(val re: Double, val im: Double): ComplexBase {
 
     override val real: Boolean
         get() = Compare.almostEquals(0.0, im)
+
     override val imag: Boolean
         get() = Compare.almostEquals(0.0, re)
+
+    val conjugate: Cartesian
+        get() = Cartesian(re, -im)
+
+    override val magnitude: Double
+        get() = sqrt(re * re + im * im)
 
     override val toPolar: Polar
         get() {
@@ -115,13 +122,7 @@ data class Cartesian(val re: Double, val im: Double): ComplexBase {
     fun ipow(n: Int): Cartesian =
         if (n < 0) throw ArithmeticException("Cannot evaluate $this.ipow($n): use ppow($n) instead.")
         else if (n == 0) Cartesian(1, 0)
-        else (this * this) * ipow(n - 1)
-
-    val conjugate: Cartesian
-        get() = Cartesian(re, -im)
-
-    val magnitude: Double
-        get() = sqrt(re * re + im * im)
+        else this * ipow(n - 1)
 
     companion object {
         val ZERO = Cartesian(0, 0)
