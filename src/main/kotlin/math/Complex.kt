@@ -38,7 +38,7 @@ class Polar(val r: Double, theta: Double): ComplexBase {
         Polar(r.pow(n.toDouble()), n.toDouble() * theta)
 
     operator fun unaryMinus(): Polar =
-        Polar(-r, theta - PI)
+        Polar(r, theta - PI)
 
     operator fun plus(polar: Polar): Polar =
         (this.toCartesian + polar.toCartesian).toPolar
@@ -58,7 +58,7 @@ class Polar(val r: Double, theta: Double): ComplexBase {
     operator fun times(n: Number): Polar {
         val nd = n.toDouble()
         return if (nd >= 0) Polar(nd * r, theta)
-        else Polar(nd * r.absoluteValue, theta - PI)
+        else Polar(nd.absoluteValue * r, theta + PI)
     }
 
     operator fun div(polar: Polar): Polar =
