@@ -152,7 +152,6 @@ class ComplexTest: StringSpec({
         }
     }
 
-
     "Cartesian: multiplying by conjugate gives real" {
         forAll(cartesianArb) { c ->
             Compare.almostEquals(0, (c.conjugate * c).im)
