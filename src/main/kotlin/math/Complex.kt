@@ -201,8 +201,21 @@ object Compare {
         x: S,
         y: T,
         precision: Double = DEFAULT_PRECISION
-    ): Boolean =
-        (x.toDouble() - y.toDouble()).absoluteValue < precision
+    ): Boolean {
+        // In case the values are precisely the same, terminate prematurely.
+        if (x == y) return true
+
+        val xd = x.toDouble()
+        val yd = y.toDouble()
+        val diff = (xd - yd).absoluteValue
+
+        // If the numbers are close enough, we have corner cases, and to avoid them,
+        // we use the fixed precision.
+        // This handles cases where a number is 0 or extremely close to 0.
+        // Otherwise, allow a fractional tolerance based on the values.
+        return if (diff < precision) true
+        else diff < max(xd.absoluteValue, yd.absoluteValue) * precision
+    }
 
     fun <S : ComplexBase, T : ComplexBase> almostEquals(
         x: S,

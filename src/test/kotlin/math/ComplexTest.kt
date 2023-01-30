@@ -217,4 +217,44 @@ class ComplexTest: StringSpec({
             Compare.almostEquals((c1 / c2).toPolar, (c1.toPolar / c2.toPolar))
         }
     }
+
+    "Cartesian: multiplicative algebraic compatability over R" {
+        forAll(Arb.pair(Arb.pair(doubleArb, doubleArb), Arb.pair(cartesianArb, cartesianArb))) { (rs, cs) ->
+            val (r1, r2) = rs
+            val (c1, c2) = cs
+            Compare.almostEquals((r1 * c1) * (r2 * c2), (r1 * r2) * (c1 * c2))
+        }
+    }
+
+    "Cartesian: R distributes over addition" {
+        forAll(Arb.triple(doubleArb, cartesianArb, cartesianArb)) { (r, c1, c2) ->
+            Compare.almostEquals(r * (c1 + c2),r * c1 + r * c2)
+        }
+    }
+
+    "Cartesian: addition over R distributes" {
+        forAll(Arb.triple(doubleArb, doubleArb, cartesianArb)) { (r1, r2, c) ->
+            Compare.almostEquals((r1 + r2) * c,r1 * c + r2 * c)
+        }
+    }
+
+    "Polar: multiplicative algebraic compatability over R" {
+        forAll(Arb.pair(Arb.pair(doubleArb, doubleArb), Arb.pair(polarArb, polarArb))) { (rs, ps) ->
+            val (r1, r2) = rs
+            val (p1, p2) = ps
+            Compare.almostEquals((r1 * p1) * (r2 * p2), (r1 * r2) * (p1 * p2))
+        }
+    }
+
+    "Polar: R distributes over addition" {
+        forAll(Arb.triple(doubleArb, polarArb, polarArb)) { (r, p1, p2) ->
+            Compare.almostEquals(r * (p1 + p2), r * p1 + r * p2)
+        }
+    }
+
+    "Polar: addition over R distributes" {
+        forAll(Arb.triple(doubleArb, doubleArb, polarArb)) { (r1, r2, p) ->
+            Compare.almostEquals((r1 + r2) * p,r1 * p + r2 * p)
+        }
+    }
 })
