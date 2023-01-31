@@ -9,6 +9,7 @@ sealed interface ComplexBase {
     val isImaginary: Boolean
     val re: Double
     val im: Double
+    val conjugate: ComplexBase
     val magnitude: Double
     val toPolar: Polar
     val toCartesian: Cartesian
@@ -31,7 +32,7 @@ class Polar(val r: Double, theta: Double): ComplexBase {
     override val im: Double
         get() = r * sin(theta)
 
-    val conjugate: Polar
+    override val conjugate: Polar
         get() = Polar(r, -theta)
 
     override val magnitude: Double
@@ -124,7 +125,7 @@ data class Cartesian(override val re: Double, override val im: Double): ComplexB
     override val isImaginary: Boolean
         get() = Compare.almostEquals(0.0, re)
 
-    val conjugate: Cartesian
+    override val conjugate: Cartesian
         get() = Cartesian(re, -im)
 
     override val magnitude: Double
