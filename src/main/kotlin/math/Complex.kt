@@ -5,8 +5,10 @@ package math
 import kotlin.math.*
 
 sealed interface ComplexBase {
-    val real: Boolean
-    val imag: Boolean
+    val isReal: Boolean
+    val isImaginary: Boolean
+    val re: Double
+    val im: Double
     val magnitude: Double
     val toPolar: Polar
     val toCartesian: Cartesian
@@ -17,11 +19,17 @@ class Polar(val r: Double, theta: Double): ComplexBase {
 
     val theta = fixAngle(theta)
 
-    override val real: Boolean
-        get() = Compare.almostEquals(0.0, r * cos(theta))
+    override val isReal: Boolean
+        get() = Compare.almostEquals(0.0, theta)
 
-    override val imag: Boolean
-        get() = Compare.almostEquals(0.0, r * sin(theta))
+    override val isImaginary: Boolean
+        get() = Compare.almostEquals(PI / 2, theta.absoluteValue)
+
+    override val re: Double
+        get() = r * cos(theta)
+
+    override val im: Double
+        get() = r * sin(theta)
 
     val conjugate: Polar
         get() = Polar(r, -theta)
@@ -107,13 +115,13 @@ operator fun Number.div(polar: Polar): Polar {
 }
 
 
-data class Cartesian(val re: Double, val im: Double): ComplexBase {
+data class Cartesian(override val re: Double, override val im: Double): ComplexBase {
     constructor(re: Number, im: Number): this(re.toDouble(), im.toDouble())
 
-    override val real: Boolean
+    override val isReal: Boolean
         get() = Compare.almostEquals(0.0, im)
 
-    override val imag: Boolean
+    override val isImaginary: Boolean
         get() = Compare.almostEquals(0.0, re)
 
     val conjugate: Cartesian

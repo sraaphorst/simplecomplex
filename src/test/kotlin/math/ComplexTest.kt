@@ -257,4 +257,18 @@ class ComplexTest: StringSpec({
             Compare.almostEquals((r1 + r2) * p,r1 * p + r2 * p)
         }
     }
+
+    "Polar: re and im components same for cartesian conversion" {
+        forAll(polarArb) { p ->
+            Compare.almostEquals(p.re, p.toCartesian.re)
+            Compare.almostEquals(p.im, p.toCartesian.im)
+        }
+    }
+
+    "Cartesian: re and im components same for polar conversion" {
+        forAll(cartesianArb) { c ->
+            Compare.almostEquals(c.re, c.toPolar.re)
+            Compare.almostEquals(c.im, c.toPolar.im)
+        }
+    }
 })
